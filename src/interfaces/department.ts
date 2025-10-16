@@ -20,7 +20,7 @@ export type TDepartment = keyof typeof LarngearCampDepartment;
 
 // TODO: edit colors to match the design
 export const DepartmentColors = {
-    default: '#8B5CF6', //purple
+    default: '#8B5CF6',
     pink: '#e65e87',
     red: '#cc3e4b',
     orange: '#f0743e',
