@@ -18,7 +18,6 @@ export const LarngearCampDepartment = {
 
 export type TDepartment = keyof typeof LarngearCampDepartment;
 
-// TODO: edit colors to match the design
 export const DepartmentColors = {
     default: '#8B5CF6',
     pink: '#e65e87',
