@@ -2,12 +2,11 @@
     "name": "vishnu21-process-bot",
     "main": "app.ts",
     "scripts": {
-        "start": "ts-node app.ts",
+        "start": "node dist/app.js",
         "dev": "nodemon ./src/app.ts",
         "test": "echo \"Error: no test specified\" && exit 1",
         "build": "tsc && tsc-alias"
     },
-    
     "dependencies": {
         "@line/bot-sdk": "^8.0.0",
         "@types/node-cron": "^3.0.8",
