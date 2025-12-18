@@ -15,6 +15,7 @@ export interface UpdateUserDTO {
 
 export interface IUser extends CreateUserDTO {
     enableBot: boolean;
+    notificationTime: number;
     selectedDepartments: TDepartment[];
     superuser: boolean;
     authorized: boolean;
