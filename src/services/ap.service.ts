@@ -473,7 +473,7 @@ const findSlotsByOffset = async (offset: 5 | 10) => {
     
     if (!slots) return [];
 
-    const now = moment().utcOffset(7);
+    const now = moment().utcOffset(7).seconds(0).milliseconds(0);
 
     return slots.filter((slot) => {
         if (!slot.start) return false;
@@ -481,7 +481,10 @@ const findSlotsByOffset = async (offset: 5 | 10) => {
         const startTime = moment(
             moment(slot.start).format('HH:mm:ss'),
             'HH:mm:ss'
-        ).utcOffset(7);
+        )
+            .utcOffset(7)
+            .seconds(0)
+            .milliseconds(0);
 
         if (startTime.isBefore(now)) {
             startTime.add(1, 'day');
@@ -492,7 +495,7 @@ const findSlotsByOffset = async (offset: 5 | 10) => {
         const alreadyNotified =
             slot.notifiedOffsets?.includes(offset);
 
-        return diff === offset && !alreadyNotified;
+        return (diff >= offset && diff < offset + 1) && !alreadyNotified;
     });
 };
 
@@ -530,9 +533,12 @@ const notifySlots = async () => {
     for (const offset of [10, 5] as const) {
         const slots = await findSlotsByOffset(offset);
         if (slots.length === 0) continue;
+        
+        slots.sort((a, b) => a.slot - b.slot);
 
         for (const slot of slots) {
             const deptMap = usersByDeptAndTime.get(slot.department);
+
             if (!deptMap) continue;
 
             // Rule:
