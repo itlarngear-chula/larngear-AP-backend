@@ -6,7 +6,7 @@ interface User extends Document {
     displayName: string;
     userId: string;
     enableBot: boolean;
-    notificationTime: number;
+    notificationTime: 0 | 5 | 10;
     selectedDepartments: string[];
     superuser: boolean;
     authorized: boolean;

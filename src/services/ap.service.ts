@@ -90,6 +90,7 @@ const updateBySlot = async (
         contact?: string;
         note?: string;
         announced?: boolean;
+        notifiedOffsets?: number[];
         totalOffset?: number;
     }
 ) => {
@@ -446,6 +447,128 @@ const setOffset = async (
     return updatedSlots;
 };
 
+const buildSlotText = (slot: ISlot, offset: number) => {
+    const start = moment(slot.start).utcOffset(7).format('HH:mm');
+
+    const prefix =
+        offset === 0
+            ? '🚨 เริ่มแล้ว'
+            : `⏰ อีก ${offset} นาที จะเริ่ม`;
+
+    return `${prefix}
+📌 Slot ${slot.slot}
+🏢 แผนก: ${slot.department}
+🕒 เวลาเริ่ม: ${start}
+🎯 กิจกรรม: ${slot.event}
+📍 สถานที่: ${slot.location ?? '-'}
+📝 หมายเหตุ: ${slot.note ?? '-'}`;
+};
+
+const findSlotsByOffset = async (offset: 5 | 10) => {
+    const slots = await ApModel.find({
+        announced: false,
+    })
+        .then((slot) => slot)
+        .catch(() => null);
+    
+    if (!slots) return [];
+
+    const now = moment().utcOffset(7);
+
+    return slots.filter((slot) => {
+        if (!slot.start) return false;
+
+        const startTime = moment(
+            moment(slot.start).format('HH:mm:ss'),
+            'HH:mm:ss'
+        ).utcOffset(7);
+
+        if (startTime.isBefore(now)) {
+            startTime.add(1, 'day');
+        }
+
+        const diff = startTime.diff(now, 'minutes');
+
+        const alreadyNotified =
+            slot.notifiedOffsets?.includes(offset);
+
+        return diff === offset && !alreadyNotified;
+    });
+};
+
+const notifySlots = async () => {
+    const users = await userService.findAll();
+    if (!users) return;
+
+    // Pre-filter enabled users
+    const enabledUsers = users.filter(
+        (u) => u.enableBot && (u.notificationTime === 5 || u.notificationTime === 10)
+    );
+
+    // Group users by department & notificationTime
+    const usersByDeptAndTime = new Map<
+        TDepartment,
+        { [key in 0 | 5 | 10]: string[] }
+    >();
+
+    for (const user of enabledUsers) {
+        for (const dept of user.selectedDepartments) {
+            const tdept = dept as TDepartment;
+
+            if (!usersByDeptAndTime.has(tdept)) {
+                usersByDeptAndTime.set(tdept, { 0: [], 5: [], 10: [] });
+            }
+            usersByDeptAndTime.get(tdept)![user.notificationTime].push(
+                user.userId
+            );
+        }
+    }
+
+    let notifyingSlots = [] as ISlot[];
+
+    // Process each offset
+    for (const offset of [10, 5] as const) {
+        const slots = await findSlotsByOffset(offset);
+        if (slots.length === 0) continue;
+
+        for (const slot of slots) {
+            const deptMap = usersByDeptAndTime.get(slot.department);
+            if (!deptMap) continue;
+
+            // Rule:
+            // offset 10 → users with notificationTime=10
+            // offset 5  → users with notificationTime=5
+            const userIds = deptMap[offset];
+
+            if (userIds.length === 0) continue;
+
+            const message = {
+                type: 'text',
+                text: buildSlotText(slot as ISlot, offset),
+            };
+
+            notifyingSlots.push(slot as ISlot);
+            console.log(`Notifying Slot ${slot.slot} to ${userIds.length} users for offset ${offset} minutes`);
+
+            await messageUtil.sendMessage('multicast', {
+                to: userIds,
+                messages: [message],
+            });
+
+            // Mark offset as notified (IMPORTANT)
+            await updateBySlot(slot.slot, {
+                notifiedOffsets: [
+                    ...(slot.notifiedOffsets ?? []),
+                    offset,
+                ],
+            });
+        }
+    }
+
+    return notifyingSlots;
+};
+
+
 export default {
     create,
     findAll,
@@ -460,4 +583,7 @@ export default {
     multicastAnnounceSlots,
     updateOffsetInSheet,
     setOffset,
+    buildSlotText,
+    findSlotsByOffset,
+    notifySlots
 };

@@ -18,6 +18,8 @@ router.post('/announce', apController.announce);
 
 router.post('/announce/reset', apController.resetAnnouncedSlots);
 
+router.post('/notify', apController.notify);
+
 router.patch('/offset', apController.makeOffset);
 
 export default router;
