@@ -60,13 +60,14 @@ async function createUser(req: Request, res: Response) {
 
     const initColor = 'default';
     const selectedColors = createDepartmentColors(initColor);
+    const allDepartments = Object.keys(LarngearCampDepartment) as TDepartment[];
 
     const createdUser = await userService.createUser({
         displayName,
         studentId,
         userId,
-        enableBot: false,
-        selectedDepartments: [],
+        enableBot: true,
+        selectedDepartments: allDepartments,
         superuser: false,
         authorized: false,
         selectedColors,
