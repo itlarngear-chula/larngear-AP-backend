@@ -15,11 +15,12 @@ function createDepartmentColors(
         BOARD: "default",
         PLAN: "blue",
         COOP: "yellow",
-        ACT: "red",
+        ACTY: "red",
         MC: "red",
-        SUPPLY: "teal",
-        PLACE: "orange",
-        NURSE: "pink",
+        SUPPLY: "pink",
+        WELFARE: "teal",
+        LOCATION: "orange",
+        MED: "pink",
         REG: "orange",
         IT: "default",
         PR: "default",
@@ -59,13 +60,14 @@ async function createUser(req: Request, res: Response) {
 
     const initColor = 'default';
     const selectedColors = createDepartmentColors(initColor);
+    const allDepartments = Object.keys(LarngearCampDepartment) as TDepartment[];
 
     const createdUser = await userService.createUser({
         displayName,
         studentId,
         userId,
-        enableBot: false,
-        selectedDepartments: [],
+        enableBot: true,
+        selectedDepartments: allDepartments,
         superuser: false,
         authorized: false,
         selectedColors,
