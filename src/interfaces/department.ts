@@ -8,7 +8,7 @@ export const LarngearCampDepartment = {
     SUPPLY: 'SUPPLY',
     WELFARE: 'WELFARE',
     LOCATION: 'LOCATION',
-    MED: 'MED',
+    MEDIC: 'MEDIC',
     REG: 'REG',
     IT: 'IT',
     PR: 'PR',
