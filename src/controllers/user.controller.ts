@@ -4,7 +4,7 @@ import {
     TDepartment,
     DepartmentColors,
 } from '@/interfaces/department';
-import { CreateUserDTO, UpdateUserDTO } from '@/interfaces/user';
+import { CreateUserDTO, UpdateUserDTO, UpdateSuperUserDTO, UpdateSuperUserListDTO } from '@/interfaces/user';
 import userService from '@/services/user.service';
 import { Request, Response } from 'express';
 
@@ -15,11 +15,12 @@ function createDepartmentColors(
         BOARD: "default",
         PLAN: "blue",
         COOP: "yellow",
-        ACT: "red",
+        ACTY: "red",
         MC: "red",
-        SUPPLY: "teal",
-        PLACE: "orange",
-        NURSE: "pink",
+        SUPPLY: "pink",
+        WELFARE: "teal",
+        LOCATION: "orange",
+        MEDIC: "pink",
         REG: "orange",
         IT: "default",
         PR: "default",
@@ -59,14 +60,15 @@ async function createUser(req: Request, res: Response) {
 
     const initColor = 'default';
     const selectedColors = createDepartmentColors(initColor);
+    const allDepartments = Object.keys(LarngearCampDepartment) as TDepartment[];
 
     const createdUser = await userService.createUser({
         displayName,
         studentId,
         userId,
-        enableBot: false,
         notificationTime: 0,
-        selectedDepartments: [],
+        enableBot: true,
+        selectedDepartments: allDepartments,
         superuser: false,
         authorized: false,
         selectedColors,
@@ -165,4 +167,59 @@ async function updateUser(req: Request, res: Response) {
     });
 }
 
-export default { createUser, getUsers, getUserByStudentIdOrUserId, updateUser };
+async function updateSuperUser(req: Request, res: Response) {
+    const { studentId } = req.params;
+    const updateBody = req.body as UpdateSuperUserDTO;
+
+    const user = await userService.findByStudentId(studentId);
+
+    if (!user) {
+        return res.status(400).send({
+            success: false,
+            message: 'Error fetching user'
+        })
+    }
+
+    const updatedUser = await userService.updateSuperUserByStudentId(
+        studentId,
+        updateBody
+    );
+
+    if (!updatedUser) {
+        return res.status(400).send({
+            success: false,
+            message: 'Error updating user',
+        });
+    }
+
+    return res.status(200).send({
+        success: true,
+        message: 'User updated successfully',
+        data: updatedUser,
+    });
+
+}
+
+async function updateSuperUserList(req: Request, res: Response) {
+    const body = req.body as UpdateSuperUserListDTO;
+
+    try {
+        const result = await userService.updateSuperUserByStudentIdList(body);
+
+        return res.status(200).json({
+            success: true,
+            message: 'Superuser updated',
+            data: result
+        });
+    } catch (error) {
+        console.error("Error updating superuser list:", error); 
+        
+        return res.status(500).json({
+            success: false,
+            message: 'Failed to update superuser list due to a server error.',
+            error: error 
+        });
+    }
+}
+
+export default { createUser, getUsers, getUserByStudentIdOrUserId, updateUser, updateSuperUser, updateSuperUserList };

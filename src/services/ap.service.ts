@@ -471,36 +471,32 @@ const setOffset = async (
     userId: string,
     displayName: string
 ) => {
-    // const [slots, profile] = await Promise.all([findAll(), getProfile(userId)]);
     const slots = await findAll();
-
     if (!slots) throw new Error('slots is null');
-    // if (!profile) throw new Error('profile is null');
 
-    const targetSlots = slots.slice(slot - 1);
+    const startIndex = slots.findIndex((x) => x.slot === slot);
+    if (startIndex === -1) throw new Error(`slot ${slot} not found`);
+
+    const targetSlots = slots.slice(startIndex);
+
+    if (targetSlots.length === 0) throw new Error('targetSlots is empty');
+
+    const firstBefore = targetSlots[0];
+
+    
+    const slotName = firstBefore.event ?? '-';
+
+    const beforeStart = moment(firstBefore.start).utcOffset(7).format('HH:mm');
+    const beforeEnd = moment(firstBefore.end).utcOffset(7).format('HH:mm');
 
     const updatedSlots = [] as ISlot[];
 
-    for (const slot of targetSlots) {
-        const start = moment(slot.start)
-            .utcOffset(7)
-            .add(offset, 'minutes')
-            .format();
-        const end = moment(slot.end)
-            .utcOffset(7)
-            .add(offset, 'minutes')
-            .format();
-        const totalOffset = (slot.totalOffset??0)+offset;
+    for (const s of targetSlots) {
+        const start = moment(s.start).utcOffset(7).add(offset, 'minutes').format();
+        const end = moment(s.end).utcOffset(7).add(offset, 'minutes').format();
+        const totalOffset = (s.totalOffset ?? 0) + offset;
 
-        console.log(
-            `${slot.slot}, ${moment(slot.start).format('HH:mm')} -> ${moment(
-                start
-            ).format('HH:mm')}, ${moment(slot.end).format('HH:mm')} -> ${moment(
-                end
-            ).format('HH:mm')}`
-        );
-
-        const updatedSlot = (await updateBySlot(slot.slot, {
+        const updatedSlot = (await updateBySlot(s.slot, {
             start,
             end,
             totalOffset,
@@ -510,21 +506,42 @@ const setOffset = async (
     }
 
     const totalOffset = updatedSlots[0]?.totalOffset || 0;
-    const sheetUpdateData = {} as Record<string, any>;
 
-    for (const slot of updatedSlots) {
-        sheetUpdateData[`B${slot.slot + 2}`] = moment(slot.start).format(
-            'HH:mm'
-        );
-        sheetUpdateData[`C${slot.slot + 2}`] = moment(slot.end).format('HH:mm');
+    const firstAfter = updatedSlots[0];
+    const afterStart = moment(firstAfter.start).utcOffset(7).format('HH:mm');
+    const afterEnd = moment(firstAfter.end).utcOffset(7).format('HH:mm');
+
+    const sheetUpdateData = {} as Record<string, any>;
+    for (const s of updatedSlots) {
+        sheetUpdateData[`B${s.slot + 2}`] = moment(s.start).format('HH:mm');
+        sheetUpdateData[`C${s.slot + 2}`] = moment(s.end).format('HH:mm');
     }
 
-    const content = flexTemplate.setOffsetBubble({ slot, offset, displayName, totalOffset });
+    
+    const content = flexTemplate.setOffsetBubble({
+        slot,
+        slotName,
+        offset,
+        displayName,
+        totalOffset,
+        beforeStart,
+        beforeEnd,
+        afterStart,
+        afterEnd,
+    });
+
+    const offsetLabel = offset > 0 ? `+${offset}` : `${offset}`;
+
+    
+    const altText =
+        `AP ${offsetLabel} นาที ` +
+        `ตั้งแต่ Slot ที่ ${slot}` +
+        ` ${slotName} จาก ${beforeStart}-${beforeEnd} เป็น ${afterStart}-${afterEnd} ` +
+        `${totalOffset === 0 ? 'Set Zero' : `รวมบวก AP ทั้งหมด ${totalOffset} นาที `}` +
+        `โดย ${displayName}`;
 
     const message = messageTemplate.flex({
-        altText: `${
-            offset === 0 ? 0 : offset > 0 ? `+${offset}` : offset
-        } นาที ตั้งแต่ Slot ที่ ${slot} เป็นต้นไป - "${totalOffset === 0 ? 'Set Zero' : `รวม ${totalOffset} นาที`}" โดย ${displayName} `,
+        altText,
         contents: content,
     });
 
@@ -535,6 +552,8 @@ const setOffset = async (
 
     return updatedSlots;
 };
+
+
 
 export default {
     create,

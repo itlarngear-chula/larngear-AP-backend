@@ -169,15 +169,27 @@ const slotBubble = ({
 
 const setOffsetBubble = ({
     slot,
+    slotName,
     offset,
     displayName,
     totalOffset,
+    beforeStart,
+    beforeEnd,
+    afterStart,
+    afterEnd,
 }: {
     slot: number;
+    slotName: string;   
     offset: number;
     displayName: string;
     totalOffset: number;
+    beforeStart: string;
+    beforeEnd: string;
+    afterStart: string;
+    afterEnd: string;
 }): FlexBubble => {
+    const offsetLabel = `${offset > 0 ? `+${offset}` : offset} นาที`;
+
     return {
         type: 'bubble',
         size: 'kilo',
@@ -198,7 +210,7 @@ const setOffsetBubble = ({
                         },
                         {
                             type: 'text',
-                            text: `${offset > 0 ? `+${offset}` : offset} นาที`,
+                            text: offsetLabel,
                             weight: 'bold',
                             size: 'xxl',
                             margin: 'md',
@@ -206,7 +218,7 @@ const setOffsetBubble = ({
                         },
                     ],
                     paddingAll: 'xxl',
-                    backgroundColor: '#020617',
+                    backgroundColor: '#101E30',
                 },
                 {
                     type: 'box',
@@ -224,27 +236,71 @@ const setOffsetBubble = ({
                                 },
                                 {
                                     type: 'text',
-                                    text: `Slot #${slot} เป็นต้นไป`,
+                                    text: `Slot #${slot}`,
                                     size: 'xl',
                                     weight: 'bold',
                                     wrap: true,
                                     color: '#1E293B',
                                 },
+
+                                
                                 {
                                     type: 'text',
-                                    text: `"${totalOffset === 0 ? 'Set Zero' : `รวม ${totalOffset} นาที`}"`,
-                                    size: 'xl',
+                                    text: slotName ? `${slotName}` : '-',
+                                    size: 'sm',
                                     weight: 'bold',
                                     wrap: true,
-                                    color: '#1E293B',
-                                },
-                                {
-                                    type: 'separator',
+                                    color: '#475569',
                                     margin: 'sm',
                                 },
+
+                                
+                                // {
+                                //     type: 'text',
+                                //     text: `จาก ${beforeStart}-${beforeEnd} เป็น ${afterStart}-${afterEnd}`,
+                                //     size: 'md',
+                                //     wrap: true,
+                                //     color: '#334155',
+                                //     margin: 'md',
+                                // },
+
+                                // (แยก 2 บรรทัด)
                                 {
                                     type: 'text',
-                                    text: `สั่งโดย ${displayName}`,
+                                    text: `จาก ${beforeStart}-${beforeEnd}`,
+                                    size: 'xs',
+                                    wrap: true,
+                                    color: '#334155',
+                                    margin: 'md',
+                                },
+                                {
+                                    type: 'text',
+                                    text: `เป็น ${afterStart}-${afterEnd}`,
+                                    size: 'xs',
+                                    wrap: true,
+                                    color: '#334155',
+                                    margin: 'sm',
+                                },
+
+                                {
+                                    type: 'separator',
+                                    margin: 'md',
+                                },
+                                {
+                                    type: 'text',
+                                    text:
+                                        totalOffset === 0
+                                            ? 'Set Zero'
+                                            : `รวมบวก AP ทั้งหมด ${totalOffset} นาที`,
+                                    size: 'lg',
+                                    weight: 'bold',
+                                    wrap: true,
+                                    color: '#1E293B',
+                                    margin: 'md',
+                                },
+                                {
+                                    type: 'text',
+                                    text: `โดย ${displayName}`,
                                     size: 'xs',
                                     wrap: true,
                                     color: '#64748B',
@@ -266,6 +322,8 @@ const setOffsetBubble = ({
         },
     };
 };
+
+
 
 export default {
     slotBubble,
