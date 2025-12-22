@@ -229,7 +229,7 @@ const findSlotsByOffset = async (offset: 0 | 5 | 10) => {
     });
 };
 
-const multicastNotifySlots = async (multicastingSlots: ISlot[], users: IUser[], offset: 0 | 5 | 10) => {
+const multicastAnnounceSlots = async (multicastingSlots: ISlot[], users: IUser[], offset: 0 | 5 | 10) => {
     // const multicastingSl/ots = await announceSlots();
     // const users = await userService.findAll();
 
@@ -446,7 +446,7 @@ const notifySlots = async () => {
             u.notificationTime === offset
         );
 
-        await multicastNotifySlots(notifyingSlotsForOffset, usersToNotify as IUser[], offset);
+        await multicastAnnounceSlots(notifyingSlotsForOffset, usersToNotify as IUser[], offset);
     }
 
     return notifyingSlots;
@@ -547,7 +547,7 @@ export default {
     syncSheet,
     findActiveSlots,
     findSlotsByOffset,
-    multicastNotifySlots,
+    multicastAnnounceSlots,
     notifySlots,
     updateOffsetInSheet,
     setOffset
