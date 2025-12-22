@@ -1,5 +1,5 @@
 import { TDepartment } from '@/interfaces/department';
-import { IUser, UpdateUserDTO } from '@/interfaces/user';
+import { IUser, UpdateUserDTO, UpdateSuperUserDTO, UpdateSuperUserListDTO } from '@/interfaces/user';
 import UserModel from '@/models/user.model';
 
 const createUser = async (user: IUser) => {
@@ -62,6 +62,33 @@ const updateByStudentId = async (studentId: string, body: UpdateUserDTO) => {
     return updatedUser;
 };
 
+const updateSuperUserByStudentId = async (studentId: string, body: UpdateSuperUserDTO) => {
+    const updatedUser = await UserModel.findOneAndUpdate({ studentId }, body, {
+        new: true,
+    }).then((user) => user)
+        .catch(() => null);
+
+    return updatedUser;
+
+}
+
+const updateSuperUserByStudentIdList = async (
+    body: UpdateSuperUserListDTO
+) => {
+    const { users, superuser } = body;
+
+    if (!users || users.length === 0) {
+        return { modifiedCount: 0 };
+    }
+
+    const result = await UserModel.updateMany(
+        { studentId: { $in: users } }, 
+        { $set: { superuser } }
+    );
+
+    return result;
+};
+
 export default {
     createUser,
     findAll,
@@ -70,4 +97,6 @@ export default {
     findUserIdBySelectedDepartments,
     updateByUserId,
     updateByStudentId,
+    updateSuperUserByStudentId,
+    updateSuperUserByStudentIdList,
 };

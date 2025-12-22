@@ -11,4 +11,10 @@ router.get('/:studentId_or_userId', userController.getUserByStudentIdOrUserId);
 
 router.patch('/:studentId_or_userId', userController.updateUser);
 
+router.put('/superuser', userController.updateSuperUserList);
+
+router.patch('/superuser/:studentId', userController.updateSuperUser);
+
+
+
 export default router;

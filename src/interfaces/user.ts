@@ -20,3 +20,13 @@ export interface IUser extends CreateUserDTO {
     authorized: boolean;
     selectedColors?: Record<TDepartment, TDepartmentColors>;
 }
+
+export interface UpdateSuperUserDTO {
+    superuser: boolean;
+}
+
+export interface UpdateSuperUserListDTO {
+    superuser: boolean;
+    users: string[];
+}
+
