@@ -9,6 +9,7 @@ import messageUtil from '@/utils/message.util';
 import userService from './user.service';
 import { DepartmentColors } from '@/interfaces/department';
 import { FlexBubble } from '@line/bot-sdk';
+import { IUser } from '@/interfaces/user';
 
 const create = async (body: ISlot) => {
     const createdSlot = await ApModel.create(body)
@@ -90,6 +91,7 @@ const updateBySlot = async (
         contact?: string;
         note?: string;
         announced?: boolean;
+        notifiedOffsets?: number[];
         totalOffset?: number;
     }
 ) => {
@@ -192,42 +194,48 @@ const findActiveSlots = async () => {
     return activeSlots.sort((a, b) => a.slot - b.slot);
 };
 
-const announceSlots = async () => {
-    const activeSlots = await findActiveSlots();
+const findSlotsByOffset = async (offset: 0 | 5 | 10) => {
+    const slots = await ApModel.find({
+        announced: false,
+    })
+        .then((slot) => slot)
+        .catch(() => null);
+    
+    if (!slots) return [];
 
-    if (!activeSlots) {
-        return null;
-    }
+    const now = moment().utcOffset(7).seconds(0).milliseconds(0);
 
-    const announcingSlots = [] as ISlot[];
+    return slots.filter((slot) => {
+        if (!slot.start) return false;
 
-    for (const slot of activeSlots) {
-        if (!slot.announced) {
-            slot.announced = true;
+        const startTime = moment(
+            moment(slot.start).format('HH:mm:ss'),
+            'HH:mm:ss'
+        )
+            .utcOffset(7)
+            .seconds(0)
+            .milliseconds(0);
 
-            const updatedSlot = await updateBySlot(slot.slot, slot);
-
-            announcingSlots.push(updatedSlot);
+        if (startTime.isBefore(now)) {
+            startTime.add(1, 'day');
         }
-    }
 
-    console.log(`${announcingSlots.length} slots have been announced`);
+        const diff = startTime.diff(now, 'minutes');
 
-    return announcingSlots;
+        const alreadyNotified =
+            slot.notifiedOffsets?.includes(offset);
+
+        return (diff >= offset && diff < offset + 1) && !alreadyNotified;
+    });
 };
 
-const multicastAnnounceSlots = async () => {
-    const announcingSlots = await announceSlots();
+const multicastAnnounceSlots = async (multicastingSlots: ISlot[], users: IUser[], offset: 0 | 5 | 10) => {
+    // const multicastingSl/ots = await announceSlots();
+    // const users = await userService.findAll();
 
-    if (!announcingSlots) {
+    if (!multicastingSlots) {
         return null;
     }
-
-    // announcingSlots.forEach((slot) => {
-    //     console.log(slot.slot, slot.event);
-    // });
-
-    const users = await userService.findAll();
 
     if (!users) {
         return null;
@@ -238,7 +246,7 @@ const multicastAnnounceSlots = async () => {
     };
 
     for (const user of users) {
-        for (const slot of announcingSlots) {
+        for (const slot of multicastingSlots) {
             if (
                 user.selectedDepartments.includes(slot.department) &&
                 user.enableBot
@@ -254,7 +262,7 @@ const multicastAnnounceSlots = async () => {
 
                 userContents[user.userId as keyof typeof userContents].push({
                     slot: slot.slot,
-                    slotColor: DepartmentColors[user.selectedColors[slot.department] as keyof typeof DepartmentColors],
+                    slotColor: DepartmentColors[user.selectedColors?.[slot.department] || 'default' as keyof typeof DepartmentColors],
                 });
             }
         }
@@ -282,8 +290,6 @@ const multicastAnnounceSlots = async () => {
 
     const groupedUserContents = messageUtil.groupMessage(userContents);
 
-    console.log('Contents', groupedUserContents);
-
     for (const key of Object.keys(groupedUserContents)) {
         const slotIndexes = JSON.parse(key) as { slot: number; slotColor: string }[];
         const userIds = groupedUserContents[key];
@@ -294,7 +300,7 @@ const multicastAnnounceSlots = async () => {
         const slots = [] as ISlotwColor[];
 
         slotIndexes.forEach((slotIndex) => {
-            const slot = announcingSlots.find(
+            const slot = multicastingSlots.find(
                 (slot) => slot.slot === slotIndex.slot
             );
 
@@ -339,7 +345,7 @@ const multicastAnnounceSlots = async () => {
                         .utcOffset(7)
                         .format('HH:mm');
                     const end = moment(slot.end).utcOffset(7).format('HH:mm');
-                    return `${slot.event} ${start}-${end} ${
+                    return `${offset === 0 ? '' : `[แจ้งเตือนล่วงหน้า ${offset} นาที] `}${slot.event} ${start}-${end} ${
                         index === slots.length - 1 ? '' : '|'
                     }`;
                 })
@@ -355,11 +361,95 @@ const multicastAnnounceSlots = async () => {
             messages: [message],
         };
 
-        console.log('user: ', userIds, 'text: ', message.altText);
+        console.log('user: ', userIds, 'text: ', message.altText, '\n');
 
         await messageUtil.sendMessage('multicast', replyData);
     }
-    return announcingSlots;
+    return multicastingSlots;
+};
+
+const notifySlots = async () => {
+    const users = await userService.findAll();
+    if (!users) return;
+
+    // Pre-filter enabled users
+    const enabledUsers = users.filter(
+        (u) => u.enableBot && (u.notificationTime === 0 || u.notificationTime === 5 || u.notificationTime === 10)
+    );
+
+    // Group users by department & notificationTime
+    const usersByDeptAndTime = new Map<
+        TDepartment,
+        { [key in 0 | 5 | 10]: string[] }
+    >();
+
+    for (const user of enabledUsers) {
+        for (const dept of user.selectedDepartments) {
+            const tdept = dept as TDepartment;
+
+            if (!usersByDeptAndTime.has(tdept)) {
+                usersByDeptAndTime.set(tdept, { 0: [], 5: [], 10: [] });
+            }
+            usersByDeptAndTime.get(tdept)![user.notificationTime].push(
+                user.userId
+            );
+        }
+    }
+
+    let notifyingSlots = [] as ISlot[];
+    
+    // Process each offset
+    for (const offset of [10, 5, 0] as const) {
+        let notifyingSlotsForOffset = [] as ISlot[];
+        const slots = await findSlotsByOffset(offset);
+        if (slots.length === 0) continue;
+        
+        slots.sort((a, b) => a.slot - b.slot);
+
+        for (const slot of slots) {
+            const deptMap = usersByDeptAndTime.get(slot.department);
+
+            if (!deptMap) continue;
+
+            // Rule:
+            // offset 10 → users with notificationTime=10
+            // offset 5  → users with notificationTime=5
+            // offset 0  → users with notificationTime=0
+            const userIds = deptMap[offset];
+
+            if (userIds.length === 0) continue;
+
+            notifyingSlots.push(slot as ISlot);
+            notifyingSlotsForOffset.push(slot as ISlot);
+
+            console.log(`Notifying Slot ${slot.slot} to ${userIds.length} users for offset ${offset} minutes`);
+
+            // Mark offset as notified (IMPORTANT)
+            await updateBySlot(slot.slot, {
+                notifiedOffsets: [
+                    ...(slot.notifiedOffsets ?? []),
+                    offset,
+                ],
+            });
+
+            if (offset === 0) {
+                // Also mark as announced
+                await updateBySlot(slot.slot, {
+                    announced: true,
+                });
+            }
+        }
+
+        console.log(`${notifyingSlotsForOffset.length} slots have been notified for offset ${offset} minutes`);
+
+        const usersToNotify = enabledUsers.filter((u) =>
+            u.notificationTime === offset
+        );
+
+        await multicastAnnounceSlots(notifyingSlotsForOffset, usersToNotify as IUser[], offset);
+    }
+
+    return notifyingSlots;
 };
 
 const updateOffsetInSheet = async (sheet: string, updateData: any) => {
@@ -475,8 +565,9 @@ export default {
     getSheet,
     syncSheet,
     findActiveSlots,
-    announceSlots,
+    findSlotsByOffset,
     multicastAnnounceSlots,
+    notifySlots,
     updateOffsetInSheet,
-    setOffset,
+    setOffset
 };

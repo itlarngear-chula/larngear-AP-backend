@@ -12,5 +12,6 @@ export interface ISlot {
     contact: string;
     note: string;
     announced?: boolean;
+    notifiedOffsets?: number[];
     totalOffset?: number;
 }

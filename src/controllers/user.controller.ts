@@ -66,6 +66,7 @@ async function createUser(req: Request, res: Response) {
         displayName,
         studentId,
         userId,
+        notificationTime: 0,
         enableBot: true,
         selectedDepartments: allDepartments,
         superuser: false,

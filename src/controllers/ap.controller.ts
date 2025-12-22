@@ -109,24 +109,24 @@ async function getUpcomingSlots(req: Request, res: Response) {
     });
 }
 
-async function announce(req: Request, res: Response) {
-    const announcingSlots = await apService.multicastAnnounceSlots();
+async function notify(req: Request, res: Response) {
+    const notifyingSlots = await apService.notifySlots();
 
-    if (!announcingSlots) {
+    if (!notifyingSlots) {
         return res.status(400).send({
             success: false,
-            message: 'Error announcing',
+            message: 'Error notifying',
         });
     }
 
-    for (const slot of announcingSlots) {
+    for (const slot of notifyingSlots) {
         console.log(slot);
     }
 
     return res.status(200).send({
         success: true,
-        message: 'Announced successfully',
-        data: announcingSlots,
+        message: 'Notified successfully',
+        data: notifyingSlots,
     });
 }
 
@@ -192,7 +192,7 @@ export default {
     getOneSlot,
     getActiveSlots,
     getUpcomingSlots,
-    announce,
+    notify,
     resetAnnouncedSlots,
     makeOffset,
 };

@@ -6,6 +6,7 @@ interface User extends Document {
     displayName: string;
     userId: string;
     enableBot: boolean;
+    notificationTime: 0 | 5 | 10;
     selectedDepartments: string[];
     superuser: boolean;
     authorized: boolean;
@@ -17,6 +18,7 @@ const UserSchema: Schema<User> = new Schema({
     displayName: { type: String, required: true },
     userId: { type: String, required: true },
     enableBot: { type: Boolean, required: true, default: false },
+    notificationTime: { type: Number, required: false, default: 0 },
     selectedDepartments: { type: [String], required: true, default: [] },
     superuser: { type: Boolean, required: true, default: false },
     authorized: { type: Boolean, required: true, default: false },
