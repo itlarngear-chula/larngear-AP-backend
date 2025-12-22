@@ -14,11 +14,11 @@ router.get('/active', apController.getActiveSlots);
 
 router.get('/upcoming', apController.getUpcomingSlots);
 
-router.post('/announce', apController.announce);
+// router.post('/announce', apController.announce);
+
+router.post('/announce', apController.notify);
 
 router.post('/announce/reset', apController.resetAnnouncedSlots);
-
-router.post('/notify', apController.notify);
 
 router.patch('/offset', apController.makeOffset);
 
