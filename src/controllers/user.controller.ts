@@ -20,7 +20,7 @@ function createDepartmentColors(
         SUPPLY: "pink",
         WELFARE: "teal",
         LOCATION: "orange",
-        MED: "pink",
+        MEDIC: "pink",
         REG: "orange",
         IT: "default",
         PR: "default",
