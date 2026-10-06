@@ -41,29 +41,45 @@ function getSlots(sheetName) {
         ).setMimeType(ContentService.MimeType.JSON);
     }
 
-    var rows = sheet
-        .getRange(3, 1, sheet.getLastRow() - 1, sheet.getLastColumn())
-        .getValues();
     var data = [];
 
-    for (var i = 0; i < rows.length; i++) {
-        var row = rows[i];
-        var record = {};
+    if (sheet.getLastRow() >= 3 && sheet.getLastColumn() > 0) {
+        var rows = sheet
+            .getRange(3, 1, sheet.getLastRow() - 2, sheet.getLastColumn())
+            .getValues();
 
-        record['slot'] = row[0];
-        record['start'] = row[1];
-        record['end'] = row[2];
-        record['duration'] = row[3];
-        record['department'] = row[4];
-        record['event'] = row[5];
-        record['location'] = row[6];
-        record['contact'] = row[7];
-        record['note'] = row[8];
+        for (var i = 0; i < rows.length; i++) {
+            var row = rows[i];
+            var record = {};
 
-        if (!isNaN(Number(row[0]))) {
-            data.push(record);
+            if (sheetName == 'Staff') {
+                record['studentId'] = row[0] == null ? '' : String(row[0]).trim();
+                record['name'] = row[1] == null ? '' : String(row[1]).trim();
+                record['nickname'] = row[2] == null ? '' : String(row[2]).trim();
+                record['year'] = row[3] == null ? '' : String(row[3]).trim();
+                record['department'] = row[4] == null ? '' : String(row[4]).trim();
+
+                if (record['studentId']) {
+                    data.push(record);
+                }
+            } else {
+                record['slot'] = row[0];
+                record['start'] = row[1];
+                record['end'] = row[2];
+                record['duration'] = row[3];
+                record['department'] = row[4];
+                record['event'] = row[5];
+                record['location'] = row[6];
+                record['contact'] = row[7];
+                record['note'] = row[8];
+
+                if (!isNaN(Number(row[0]))) {
+                    data.push(record);
+                }
+            }
         }
     }
+
     var result = JSON.stringify({ success: true, data: data });
     return ContentService.createTextOutput(result).setMimeType(
         ContentService.MimeType.JSON

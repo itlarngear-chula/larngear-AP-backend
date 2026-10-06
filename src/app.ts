@@ -12,6 +12,7 @@ import errorRoutes from './routes/error.routes';
 import userRoutes from './routes/user.routes';
 import helmet from 'helmet';
 import apRoutes from './routes/ap.routes';
+import staffRoutes from './routes/staff.routes';
 import webhookRoutes from './routes/webhook.routes';
 
 dotenv.config();
@@ -50,6 +51,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 app.use('/', defaultRoutes);
 app.use('/ap', apRoutes);
+app.use('/staff', staffRoutes);
 app.use('/user', userRoutes);
 app.use(errorRoutes);
 

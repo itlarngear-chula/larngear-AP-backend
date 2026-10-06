@@ -1,6 +1,7 @@
 import { ISlot } from '@/interfaces/ap';
 import { TextEvent } from '@/interfaces/webhook';
 import apService from '@/services/ap.service';
+import staffService from '@/services/staff.service';
 import userService from '@/services/user.service';
 import webhookService from '@/services/webhook.service';
 import lineClientUtil from '@/utils/lineClient.util';
@@ -10,15 +11,51 @@ import { Request, Response } from 'express';
 async function webhookHandler(req: Request, res: Response) {
     // console.log(req.body.events);
 
-    await req.body.events
+    const events = req.body.events
         .filter(
             (event: WebhookEvent) =>
                 event.type === 'message' && event.message.type === 'text'
-        )
-        .forEach(async (event: TextEvent) => {
-            const user = await userService.findByUserId(event.source.userId!);
+        ) as TextEvent[];
 
-            switch (event.message.text) {
+    for (const event of events) {
+        let isEligible = false;
+        let isSuperuser = false;
+
+        try {
+            const lineUserId = event.source.userId;
+            if (!lineUserId) {
+                await lineClientUtil.replyText(
+                    event.replyToken,
+                    'Only listed staff can use this bot'
+                );
+                continue;
+            }
+
+            const user = await userService.findByUserId(lineUserId);
+            if (user) {
+                isSuperuser = user.superuser;
+                isEligible = Boolean(
+                    await staffService.findByStudentId(user.studentId)
+                );
+            }
+        } catch (error) {
+            console.error('Error checking webhook staff eligibility', error);
+            await lineClientUtil.replyText(
+                event.replyToken,
+                'Unable to verify your staff eligibility right now'
+            );
+            continue;
+        }
+
+        if (!isEligible) {
+            await lineClientUtil.replyText(
+                event.replyToken,
+                'Only listed staff can use this bot'
+            );
+            continue;
+        }
+
+        switch (event.message.text) {
                 case 'active':
                     const activeApData = await apService.findActiveSlots();
 
@@ -36,7 +73,7 @@ async function webhookHandler(req: Request, res: Response) {
                     await webhookService.announceSlot(event, activeApData);
                     break;
                 case 'sync':
-                    if (!user || !user.superuser) {
+                    if (!isSuperuser) {
                         return res.status(400).send({
                             success: false,
                             message:
@@ -64,7 +101,7 @@ async function webhookHandler(req: Request, res: Response) {
                     );
                     break;
                 case 'reset':
-                    if (!user || !user.superuser) {
+                    if (!isSuperuser) {
                         return res.status(400).send({
                             success: false,
                             message:
@@ -100,8 +137,8 @@ async function webhookHandler(req: Request, res: Response) {
                     );
                     break;
                 default:
-            }
-        });
+        }
+    }
 
     res.status(200).send({
         success: true,

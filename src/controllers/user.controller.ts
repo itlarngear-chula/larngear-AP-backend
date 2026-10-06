@@ -5,6 +5,7 @@ import {
     DepartmentColors,
 } from '@/interfaces/department';
 import { CreateUserDTO, UpdateUserDTO, UpdateSuperUserDTO, UpdateSuperUserListDTO } from '@/interfaces/user';
+import staffService from '@/services/staff.service';
 import userService from '@/services/user.service';
 import { Request, Response } from 'express';
 
@@ -40,11 +41,38 @@ function createDepartmentColors(
 async function createUser(req: Request, res: Response) {
     const { displayName, studentId, userId } = req.body as CreateUserDTO;
 
-    const existedUser = await userService.findByStudentId(studentId);
+    if (typeof studentId !== 'string' || !studentId.trim()) {
+        return res.status(400).send({
+            success: false,
+            message: 'A valid studentId is required',
+        });
+    }
+
+    const normalizedStudentId = studentId.trim();
+    let staff;
+
+    try {
+        staff = await staffService.findByStudentId(normalizedStudentId);
+    } catch (error) {
+        console.error('Error checking staff eligibility', error);
+        return res.status(500).send({
+            success: false,
+            message: 'Error verifying staff eligibility',
+        });
+    }
+
+    if (!staff) {
+        return res.status(403).send({
+            success: false,
+            message: 'Only listed staff can create or update a chatbot user',
+        });
+    }
+
+    const existedUser = await userService.findByStudentId(normalizedStudentId);
 
     if (existedUser) {
         const updatedUser = await userService.updateByStudentId(
-            existedUser.studentId,
+            normalizedStudentId,
             {
                 displayName,
             }
@@ -64,7 +92,7 @@ async function createUser(req: Request, res: Response) {
 
     const createdUser = await userService.createUser({
         displayName,
-        studentId,
+        studentId: normalizedStudentId,
         userId,
         notificationTime: 0,
         enableBot: true,

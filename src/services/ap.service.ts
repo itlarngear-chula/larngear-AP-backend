@@ -241,11 +241,21 @@ const multicastAnnounceSlots = async (multicastingSlots: ISlot[], users: IUser[]
         return null;
     }
 
+    const validUsers = users.filter((user) =>
+        /^U[0-9a-f]{32}$/i.test(user.userId)
+    );
+
+    if (validUsers.length !== users.length) {
+        console.warn(
+            `Skipping ${users.length - validUsers.length} multicast recipient(s) with invalid LINE user IDs`
+        );
+    }
+
     const userContents = {} as {
         [key: string]: { slot: number; slotColor: string }[];
     };
 
-    for (const user of users) {
+    for (const user of validUsers) {
         for (const slot of multicastingSlots) {
             if (
                 user.selectedDepartments.includes(slot.department) &&
