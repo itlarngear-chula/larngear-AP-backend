@@ -23,7 +23,7 @@ moment.tz.setDefault('Asia/Bangkok');
 
 mongoose
     .connect(
-        `mongodb+srv://${process.env.MONGO_USER}:${process.env.MONGO_PASS}@${process.env.MONGO_CLUSTER}.nljeriw.mongodb.net/?retryWrites=true&w=majority`
+        `mongodb+srv://${process.env.MONGO_USER}:${process.env.MONGO_PASS}@${process.env.MONGO_CLUSTER}.e5oap4y.mongodb.net/?retryWrites=true&w=majority`
     )
     .then(() => {
         console.log('Database connected ');
