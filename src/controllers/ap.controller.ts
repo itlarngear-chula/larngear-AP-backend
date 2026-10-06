@@ -158,10 +158,10 @@ async function resetAnnouncedSlots(req: Request, res: Response) {
 }
 
 async function makeOffset(req: Request, res: Response) {
-    const { slot, offset, userId, displayName } = req.body;
+    const { slot, offset, userId, displayName, reason } = req.body;
 
     const updatedSlot = await apService
-        .setOffset(process.env.SHEET_NAME!, slot, offset, userId, displayName)
+        .setOffset(process.env.SHEET_NAME!, slot, offset, userId, displayName, reason)
         .catch();
 
     if (updatedSlot instanceof Error && updatedSlot.message === 'slots is null')

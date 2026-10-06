@@ -469,7 +469,8 @@ const setOffset = async (
     slot: number,
     offset: number,
     userId: string,
-    displayName: string
+    displayName: string,
+    reason: string,
 ) => {
     const slots = await findAll();
     if (!slots) throw new Error('slots is null');
@@ -528,6 +529,7 @@ const setOffset = async (
         beforeEnd,
         afterStart,
         afterEnd,
+        reason,
     });
 
     const offsetLabel = offset > 0 ? `+${offset}` : `${offset}`;

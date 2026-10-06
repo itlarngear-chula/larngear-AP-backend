@@ -177,6 +177,7 @@ const setOffsetBubble = ({
     beforeEnd,
     afterStart,
     afterEnd,
+    reason,
 }: {
     slot: number;
     slotName: string;   
@@ -187,6 +188,7 @@ const setOffsetBubble = ({
     beforeEnd: string;
     afterStart: string;
     afterEnd: string;
+    reason: string;
 }): FlexBubble => {
     const offsetLabel = `${offset > 0 ? `+${offset}` : offset} นาที`;
 
@@ -280,6 +282,15 @@ const setOffsetBubble = ({
                                     wrap: true,
                                     color: '#334155',
                                     margin: 'sm',
+                                },
+
+                                {
+                                    type: 'text',
+                                    text: `description: ${reason}`,
+                                    size: 'sm',
+                                    wrap: true,
+                                    color: '#475569',
+                                    margin: 'md',
                                 },
 
                                 {
